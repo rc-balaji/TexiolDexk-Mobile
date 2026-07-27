@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.1.0
+
+- Automatic native same-LAN probe and direct-LAN fallback for Internet Device IDs.
+- Full ICE server configuration and one ICE restart before failure.
+- Immediate target-offline, cancellation and cleanup handling.
+- Privacy-safe diagnostics for the protected Server monitor.
+- Android resource and artifact naming fixes retained.
+
+
 ## 2.0.2
 
 - Split into an independent controller-only mobile repository.

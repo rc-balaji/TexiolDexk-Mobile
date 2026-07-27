@@ -502,7 +502,7 @@ public final class MainActivity extends Activity {
         settings.setMediaPlaybackRequiresUserGesture(true);
         settings.setCacheMode(WebSettings.LOAD_NO_CACHE);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
-        settings.setUserAgentString(settings.getUserAgentString() + " TexiolDexkMobile/2.0.0");
+        settings.setUserAgentString(settings.getUserAgentString() + " TexiolDexkMobile/2.1.0");
         if (BuildConfig.DEBUG) WebView.setWebContentsDebuggingEnabled(true);
         webView.addJavascriptInterface(new NativeBridge(), "DexkNative");
 
@@ -571,6 +571,48 @@ public final class MainActivity extends Activity {
                 });
             }).start();
         }
+        @JavascriptInterface public void probeLanCandidates(String callbackId, String candidatesJson) {
+            if (callbackId == null || callbackId.length() > 128 || candidatesJson == null || candidatesJson.length() > 32768) return;
+            new Thread(() -> {
+                String payload = "{}"; String error = null;
+                try {
+                    JSONArray candidates = new JSONArray(candidatesJson);
+                    JSONObject result = new JSONObject();
+                    for (int i = 0; i < candidates.length() && i < 8; i++) {
+                        JSONObject item = candidates.optJSONObject(i);
+                        String raw = item == null ? candidates.optString(i, "") : item.optString("url", "");
+                        String safeUrl = validateLanCandidate(raw);
+                        if (safeUrl.isEmpty()) continue;
+                        Uri uri = Uri.parse(safeUrl);
+                        URL helloUrl = new URL("http://" + uri.getHost() + ":45911/api/remote/hello");
+                        HttpURLConnection connection = (HttpURLConnection) helloUrl.openConnection();
+                        connection.setConnectTimeout(1200);
+                        connection.setReadTimeout(1600);
+                        connection.setRequestMethod("GET");
+                        connection.setRequestProperty("Accept", "application/json");
+                        connection.setRequestProperty("User-Agent", "TexiolDexk-Mobile/2.1.0 LAN-Probe");
+                        int code = connection.getResponseCode();
+                        String body = code >= 200 && code < 300 ? readSmallResponse(connection) : "";
+                        connection.disconnect();
+                        if (code >= 200 && code < 300) {
+                            result.put("url", safeUrl);
+                            result.put("reachable", true);
+                            try { result.put("active", new JSONObject(body).optBoolean("active", false)); } catch (Throwable ignored) { }
+                            break;
+                        }
+                    }
+                    payload = result.toString();
+                } catch (Throwable failure) {
+                    error = failure.getMessage() == null ? failure.getClass().getSimpleName() : failure.getMessage();
+                }
+                final String resultPayload = payload; final String resultError = error;
+                runOnUiThread(() -> {
+                    if (webView == null) return;
+                    String script = "window.DexkCloudNative&&window.DexkCloudNative.probeComplete(" + JSONObject.quote(callbackId) + "," + JSONObject.quote(resultPayload) + "," + (resultError == null ? "null" : JSONObject.quote(resultError)) + ");";
+                    webView.evaluateJavascript(script, null);
+                });
+            }).start();
+        }
         @JavascriptInterface public void showKeyboard() {
             runOnUiThread(() -> {
                 if (webView == null) return;
@@ -579,6 +621,28 @@ public final class MainActivity extends Activity {
                 if (manager != null) manager.showSoftInput(webView, InputMethodManager.SHOW_IMPLICIT);
             });
         }
+    }
+
+    private String validateLanCandidate(String raw) {
+        try {
+            Uri uri = Uri.parse(raw == null ? "" : raw.trim());
+            if (!"http".equalsIgnoreCase(uri.getScheme()) || uri.getPort() != 45911) return "";
+            String host = uri.getHost();
+            if (host == null || !host.matches("\\d{1,3}(\\.\\d{1,3}){3}")) return "";
+            String[] parts = host.split("\\.");
+            int a = Integer.parseInt(parts[0]), b = Integer.parseInt(parts[1]), c = Integer.parseInt(parts[2]), d = Integer.parseInt(parts[3]);
+            if (a > 255 || b > 255 || c > 255 || d > 255 || !isLocalIpv4(a, b, c, d)) return "";
+            return "http://" + host + ":45911/remote";
+        } catch (Throwable ignored) { return ""; }
+    }
+
+    private String readSmallResponse(HttpURLConnection connection) throws Exception {
+        StringBuilder out = new StringBuilder();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
+            char[] buffer = new char[1024]; int n;
+            while ((n = reader.read(buffer)) >= 0 && out.length() < 8192) out.append(buffer, 0, n);
+        }
+        return out.toString();
     }
 
     private void destroyWebView() {

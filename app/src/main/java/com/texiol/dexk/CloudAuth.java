@@ -55,14 +55,16 @@ final class CloudAuth {
         final long expiresAtMs;
         final String deviceName;
         final List<String> stunUrls;
+        final JSONArray iceServers;
 
-        Session(String serverUrl, String deviceId, String accessToken, long expiresAtMs, String deviceName, List<String> stunUrls) {
+        Session(String serverUrl, String deviceId, String accessToken, long expiresAtMs, String deviceName, List<String> stunUrls, JSONArray iceServers) {
             this.serverUrl = serverUrl;
             this.deviceId = deviceId;
             this.accessToken = accessToken;
             this.expiresAtMs = expiresAtMs;
             this.deviceName = deviceName;
             this.stunUrls = stunUrls;
+            this.iceServers = iceServers;
         }
 
         JSONObject toJson() throws Exception {
@@ -73,8 +75,9 @@ final class CloudAuth {
             out.put("accessTokenExpiresAt", expiresAtMs / 1000L);
             out.put("deviceName", deviceName);
             out.put("stunUrls", new JSONArray(stunUrls));
+            out.put("iceServers", iceServers);
             out.put("platform", "android");
-            out.put("clientVersion", "2.0.2");
+            out.put("clientVersion", "2.1.0");
             return out;
         }
     }
@@ -113,8 +116,8 @@ final class CloudAuth {
 
         String token = response.getString("accessToken");
         long expiresAtSeconds = response.optLong("accessTokenExpiresAt", System.currentTimeMillis() / 1000L + 900L);
-        List<String> stun = bootstrapStun();
-        cached = new Session(SERVER_URL, deviceId, token, expiresAtSeconds * 1000L, deviceName(context), stun);
+        Bootstrap bootstrap = bootstrapIce(token);
+        cached = new Session(SERVER_URL, deviceId, token, expiresAtSeconds * 1000L, deviceName(context), bootstrap.stunUrls, bootstrap.iceServers);
         return cached;
     }
 
@@ -147,26 +150,43 @@ final class CloudAuth {
         return raw == null ? "" : raw.replaceAll("\\D", "");
     }
 
-    private static List<String> bootstrapStun() {
-        ArrayList<String> result = new ArrayList<>();
+    private static final class Bootstrap {
+        final List<String> stunUrls;
+        final JSONArray iceServers;
+        Bootstrap(List<String> stunUrls, JSONArray iceServers) { this.stunUrls = stunUrls; this.iceServers = iceServers; }
+    }
+
+    private static Bootstrap bootstrapIce(String accessToken) {
+        ArrayList<String> stun = new ArrayList<>();
+        JSONArray ice = new JSONArray();
         try {
             HttpURLConnection connection = (HttpURLConnection) new URL(SERVER_URL + "/v2/bootstrap").openConnection();
             connection.setConnectTimeout(10_000);
             connection.setReadTimeout(10_000);
             connection.setRequestMethod("GET");
-            connection.setRequestProperty("User-Agent", "TexiolDexk-Mobile/2.0.2");
+            connection.setRequestProperty("User-Agent", "TexiolDexk-Mobile/2.1.0");
+            if (accessToken != null && !accessToken.isEmpty()) connection.setRequestProperty("Authorization", "Bearer " + accessToken);
             String body = readResponse(connection);
             if (connection.getResponseCode() >= 200 && connection.getResponseCode() < 300) {
-                JSONArray values = new JSONObject(body).optJSONArray("stunUrls");
+                JSONObject payload = new JSONObject(body);
+                JSONArray values = payload.optJSONArray("stunUrls");
                 if (values != null) for (int i = 0; i < values.length(); i++) {
                     String value = values.optString(i, "");
-                    if (!value.isEmpty()) result.add(value);
+                    if (!value.isEmpty()) stun.add(value);
+                }
+                JSONArray configured = payload.optJSONArray("iceServers");
+                if (configured != null) for (int i = 0; i < configured.length(); i++) {
+                    JSONObject server = configured.optJSONObject(i);
+                    if (server != null) ice.put(new JSONObject(server.toString()));
                 }
             }
             connection.disconnect();
         } catch (Throwable ignored) { }
-        if (result.isEmpty()) result.add("stun:stun.cloudflare.com:3478");
-        return result;
+        if (stun.isEmpty()) stun.add("stun:stun.cloudflare.com:3478");
+        if (ice.length() == 0) {
+            try { ice.put(new JSONObject().put("urls", new JSONArray(stun))); } catch (Throwable ignored) { }
+        }
+        return new Bootstrap(stun, ice);
     }
 
     private static JSONObject postJson(String address, JSONObject body, String authorization) throws Exception {
@@ -177,7 +197,7 @@ final class CloudAuth {
         connection.setDoOutput(true);
         connection.setRequestProperty("Content-Type", "application/json; charset=utf-8");
         connection.setRequestProperty("Accept", "application/json");
-        connection.setRequestProperty("User-Agent", "TexiolDexk-Mobile/2.0.2");
+        connection.setRequestProperty("User-Agent", "TexiolDexk-Mobile/2.1.0");
         if (authorization != null) connection.setRequestProperty("Authorization", authorization);
         byte[] encoded = body.toString().getBytes(StandardCharsets.UTF_8);
         connection.setFixedLengthStreamingMode(encoded.length);

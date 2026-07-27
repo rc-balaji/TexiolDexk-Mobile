@@ -11,10 +11,29 @@ function localSignalling(base='http://127.0.0.1:45910'){
  let seq=0,closed=false,handlers=new Set();
  const send=async message=>{const r=await fetch(base+'/api/cloud/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(message),cache:'no-store'});if(!r.ok)throw new Error((await r.text()).trim()||r.statusText)};
  const status=async()=>{const r=await fetch(base+'/api/cloud/status',{cache:'no-store'});if(!r.ok)throw new Error((await r.text()).trim()||r.statusText);return r.json()};
- const loop=async()=>{while(!closed){try{const r=await fetch(`${base}/api/cloud/events?after=${seq}`,{cache:'no-store'});if(!r.ok)throw new Error(await r.text());const j=await r.json();for(const e of j.events||[]){seq=Math.max(seq,Number(e.seq)||0);for(const h of handlers)try{h(e.payload)}catch{}}}catch{await sleep(900)}}};
+ const loop=async()=>{while(!closed){try{const r=await fetch(`${base}/api/cloud/events?after=${seq}`,{cache:'no-store'});if(!r.ok)throw new Error(await r.text());const j=await r.json();for(const e of j.events||[]){seq=Math.max(seq,Number(e.seq)||0);for(const h of handlers)try{h(e.payload)}catch{}}}catch{await sleep(700)}}};
  loop();
  return{send,status,onMessage(fn){handlers.add(fn);return()=>handlers.delete(fn)},close(){closed=true}};
 }
-function peer(stunUrls=[]){return new RTCPeerConnection({iceServers:stunUrls?.length?[{urls:stunUrls}]:[]})}
-window.DexkCloud={normalizeId,formatId,uuid,sleep,packet,unpack,localSignalling,peer};
+function normalizeIceServers(value){
+ const fallback=[{urls:['stun:stun.cloudflare.com:3478']}];
+ if(!Array.isArray(value)||!value.length)return fallback;
+ if(value.every(v=>typeof v==='string'))return [{urls:value.filter(Boolean)}];
+ const out=[];
+ for(const item of value){
+  if(!item||typeof item!=='object')continue;
+  const raw=item.urls;
+  const urls=(Array.isArray(raw)?raw:[raw]).filter(v=>typeof v==='string'&&/^(stun|stuns|turn|turns):/i.test(v));
+  if(!urls.length)continue;
+  const server={urls};
+  if(typeof item.username==='string')server.username=item.username;
+  if(typeof item.credential==='string')server.credential=item.credential;
+  out.push(server);
+ }
+ return out.length?out:fallback;
+}
+function peer(iceServers=[]){return new RTCPeerConnection({iceServers:normalizeIceServers(iceServers),iceCandidatePoolSize:4,bundlePolicy:'max-bundle'})}
+function candidateKind(candidate){const text=String(candidate?.candidate||candidate||'');const match=text.match(/\btyp\s+(host|srflx|prflx|relay)\b/i);return match?match[1].toLowerCase():'unknown'}
+function rtcState(pc){return{connectionState:pc?.connectionState||'none',iceConnectionState:pc?.iceConnectionState||'none',iceGatheringState:pc?.iceGatheringState||'none',signalingState:pc?.signalingState||'none'}}
+window.DexkCloud={normalizeId,formatId,uuid,sleep,packet,unpack,localSignalling,normalizeIceServers,peer,candidateKind,rtcState};
 })();

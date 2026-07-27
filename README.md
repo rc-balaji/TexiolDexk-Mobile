@@ -1,4 +1,4 @@
-# TexiolDexk-Mobile v2.0.2
+# TexiolDexk-Mobile v2.1.0
 
 Android controller-only application for Texiol's Dexk Windows.
 
@@ -8,7 +8,9 @@ Android controller-only application for Texiol's Dexk Windows.
 - Permanent `DEXK-` Internet Device ID connection.
 - Explicit `LAN-` local ID and direct IPv4 connection.
 - QR scanning for Windows pairing links.
-- WebRTC direct P2P over the deployed Texiol signalling server.
+- Automatic same-LAN native probe and direct receiver fallback after Internet-ID signalling.
+- WebRTC over the deployed Texiol signalling server for different networks.
+- Optional TURN consumption when authenticated Server bootstrap returns a relay configuration.
 - Touchpad, direct touch, Guide Pointer, exclusive Control, keyboard, clipboard, zoom, and saved devices.
 - Android Keystore-wrapped Ed25519 device identity.
 - No Android hosting, phone screen sharing, Accessibility Service, unattended access, or QR generator.
@@ -35,4 +37,4 @@ Required release secrets:
 - `ANDROID_KEY_ALIAS`
 - `ANDROID_KEY_PASSWORD`
 
-Internet mode is P2P-only in v2.0.2. Networks that block direct ICE connectivity require a future TURN fallback.
+On restrictive external networks, a TURN service must be configured in the Server. Mobile contains no embedded TURN or admin credentials.

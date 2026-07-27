@@ -1,8 +1,0 @@
-TEXIOLDEXK MOBILE v2.0.2 VALIDATION
-- Complete original repository tree retained.
-- Android app_name resource corrected.
-- XML resource parse passed.
-- JavaScript syntax checks passed.
-- Internet signalling diagnostics improved.
-- Host approval remains mandatory.
-Note: APK compilation is performed by GitHub Actions because the uploaded repository does not include a Gradle wrapper/runtime cache.
