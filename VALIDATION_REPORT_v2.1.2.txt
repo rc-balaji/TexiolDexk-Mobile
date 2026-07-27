@@ -1,0 +1,22 @@
+TEXIOLDEXK MOBILE v2.1.2 VALIDATION
+
+Validated in packaging environment:
+- Controller JavaScript syntax passed
+- Signalling wire regression validation passed
+- Same-LAN native fallback simulation passed
+- DXF2 frame transport reassembled 620,123 bytes from 51 deliberately reversed RTC chunks
+- AndroidManifest.xml and all Android resource XML parsed successfully
+- GitHub Actions YAML parsed successfully
+- versionCode 23 and versionName 2.1.2 configured
+
+Corrections in this release:
+- Android WebView receives screen JPEGs as safe-size chunks and reassembles them out of order.
+- A frame arriving immediately after approval is buffered until the viewer callback is installed.
+- First-frame receive, render, assembly and decode diagnostics are reported to /monitor.
+- The displayed Internet FPS is based on rendered frames instead of host capture FPS.
+- Established P2P sessions attempt ICE restart after a disconnect.
+
+Not validated here:
+- APK/AAB compilation because Android SDK/Gradle were unavailable in this environment
+- Physical Android WebView rendering and touch control
+- Reliability across restrictive public networks without TURN

@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.1.2
+
+- Added chunked DXF2 JPEG frame reassembly for Android WebView instead of requiring one oversized RTCDataChannel message.
+- Buffers an early first frame until the remote viewer installs its render callback, removing the authentication/frame race.
+- Reports first-frame receive, render, assembly-drop and decode diagnostics to the protected monitor.
+- Keeps received FPS separate from host capture FPS and displays a useful first-frame timeout message.
+- Added automatic ICE restart after a connected P2P path drops and frame-transport regression tests.
+
 ## 2.1.1
 
 - Fixed WebRTC signalling correlation so optional `requestId` values are omitted instead of serialized as `null`.

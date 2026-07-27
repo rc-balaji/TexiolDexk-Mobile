@@ -1,4 +1,4 @@
-# TexiolDexk-Mobile v2.1.1
+# TexiolDexk-Mobile v2.1.2
 
 Android controller-only application for Texiol's Dexk Windows.
 
@@ -10,7 +10,8 @@ Android controller-only application for Texiol's Dexk Windows.
 - QR scanning for Windows pairing links.
 - Automatic same-LAN native probe and direct receiver fallback after Internet-ID signalling.
 - WebRTC over the deployed Texiol signalling server for different networks.
-- v2.1.1 signalling correlation fix so host answers and remote ICE candidates are no longer lost.
+- Chunked DXF2 screen-frame reassembly for Android WebView, including early-frame buffering and visible first-frame diagnostics.
+- Automatic ICE restart when an established direct P2P path becomes disconnected.
 - Optional TURN consumption when authenticated Server bootstrap returns a relay configuration.
 - Touchpad, direct touch, Guide Pointer, exclusive Control, keyboard, clipboard, zoom, and saved devices.
 - Android Keystore-wrapped Ed25519 device identity.

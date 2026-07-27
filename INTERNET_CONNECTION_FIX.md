@@ -1,7 +1,7 @@
-# Internet connection fix — v2.1.1
+# Internet connection fix — v2.1.2
 
 - Keeps the complete Android controller source and assets.
 - Fixes the Android `app_name` resource compilation failure.
 - Improves secure signalling WebSocket error reporting.
-- Remains compatible with the Windows v2.1.1 host auto-receive-on-request behavior.
+- Remains compatible with the Windows v2.1.2 host auto-receive-on-request behavior.
 - Host approval is still mandatory for every internet session.

@@ -13,6 +13,7 @@ let frameW=1,frameH=1,frameCounter=0,frameWindow=performance.now();
 let fitScale=1,viewScale=1,panX=0,panY=0,hasFrame=false;
 let pendingMove=null,moveBusy=false,lastTap=null,pendingScroll={wheel:0,hwheel:0},scrollBusy=false,pointerRemainder={x:0,y:0};
 let floatingPadVisible=true;
+let pendingInternetFrame=null,firstFrameTimer=0,firstFrameRendered=false;
 
 function nativeCall(name,...args){try{return window.DexkNative?.[name]?.(...args)}catch{return undefined}}
 const INPUT_PREF_KEY='texiol.dexk.controller.preferences.v1';
@@ -51,7 +52,8 @@ async function connectSession(){
     let j;if(internetMode){j=await internetTransport.connect({pin:$('#remotePin').value.trim(),name:$('#name').value.trim(),quality:$('#quality').value,clientType});token='internet';sessionId=j.sessionId||'internet'}else{const r=await req('/api/remote/connect',{method:'POST',body:JSON.stringify({pin:$('#remotePin').value.trim(),name:$('#name').value.trim(),quality:$('#quality').value,clientType})});j=await r.json();token=j.token;sessionId=j.sessionId}permissions=j.permissions;sessionMode=j.mode||'pointer';connected=true;
     $('#connectMain').classList.add('hidden');$('#sessionUI').classList.remove('hidden');$('#topDisconnect').classList.remove('hidden');
     setStatus(internetMode?'Connected · Internet P2P':'Connected',true);document.body.classList.add('session-active');nativeCall('sessionState','active');
-    setInputMode(inputMode,false);setSessionModeUI(sessionMode);updateTools();fitCanvas();frameLoop();statusLoop();
+    setInputMode(inputMode,false);setSessionModeUI(sessionMode);updateTools();fitCanvas();installInternetFrameHooks();frameLoop();statusLoop();
+    if(internetMode){internetTransport.flushQueuedFrame?.();clearTimeout(firstFrameTimer);firstFrameTimer=setTimeout(()=>{if(connected&&!hasFrame){const message='Connected, but the first screen frame has not arrived. Check the host Frame diagnostics in /monitor.';$('#viewerPlaceholder').querySelector('p')?.replaceChildren(document.createTextNode(message));internetTransport.report?.('first-frame-timeout',{message});}},9000);}
   }catch(e){setStatus('Not connected');$('#connectError').textContent=e.message}
   finally{btn.disabled=false}
 }
@@ -104,7 +106,7 @@ async function statusLoop(){
     try{
       const r=await req('/api/remote/status');const j=await r.json();permissions=j.permissions||permissions;controlOwner=j.controlOwner||{active:false};
       renderParticipants(j.participants||[]);if(j.session?.mode&&j.session.mode!==sessionMode)setSessionModeUI(j.session.mode);
-      $('#remoteFps').textContent=`${j.captureFps||0} FPS`;updateTools();if(!j.active)throw new Error('Host stopped receiving');
+      if(!internetMode)$('#remoteFps').textContent=`${j.captureFps||0} FPS`;updateTools();if(!j.active)throw new Error('Host stopped receiving');
     }catch(e){if(connected){endSession(e.message);break}}
     await sleep(1200)
   }
@@ -114,18 +116,32 @@ function renderParticipants(items){
   bar.innerHTML=visible.map(x=>`<div class="participant-chip ${x.sharedSystemCursor?'shared':''}"><i style="background:${escapeHtml(x.color)}">${escapeHtml((x.label||'R')[0].toUpperCase())}</i><span>${escapeHtml(x.label)} · ${x.sharedSystemCursor?'shared cursor':'guide pointer'}</span></div>`).join('');
 }
 
+function installInternetFrameHooks(){
+  if(!internetMode)return;
+  window.DexkInternetOnFrame=(meta,bytes)=>{if(!connected){pendingInternetFrame={meta,bytes};return;}drawInternetFrame(meta,bytes)};
+  window.DexkInternetOnClose=message=>{if(connected)endSession(message||'Internet session closed')};
+  if(pendingInternetFrame&&connected){const item=pendingInternetFrame;pendingInternetFrame=null;drawInternetFrame(item.meta,item.bytes)}
+}
 async function drawInternetFrame(meta,bytes){
-  if(!connected)return;const canvas=$('#screen'),ctx=canvas.getContext('2d',{alpha:false,desynchronized:true});
-  try{seq=Number(meta?.seq||seq);frameW=Number(meta?.width||1);frameH=Number(meta?.height||1);const bmp=await createImageBitmap(new Blob([bytes],{type:'image/jpeg'}));const first=!hasFrame;if(canvas.width!==bmp.width||canvas.height!==bmp.height){canvas.width=bmp.width;canvas.height=bmp.height;frameW=bmp.width;frameH=bmp.height}ctx.drawImage(bmp,0,0);bmp.close();hasFrame=true;$('#viewerPlaceholder').classList.add('hidden');frameCounter++;const now=performance.now();if(now-frameWindow>=1000){$('#remoteFps').textContent=`${frameCounter} FPS`;frameCounter=0;frameWindow=now}if(first)fitCanvas()}catch{}
+  if(!connected){pendingInternetFrame={meta,bytes};return}
+  const canvas=$('#screen'),ctx=canvas.getContext('2d',{alpha:false,desynchronized:true});
+  try{
+    seq=Number(meta?.seq||seq);frameW=Number(meta?.width||1);frameH=Number(meta?.height||1);
+    const bmp=await createImageBitmap(new Blob([bytes],{type:'image/jpeg'})),first=!hasFrame;
+    if(canvas.width!==bmp.width||canvas.height!==bmp.height){canvas.width=bmp.width;canvas.height=bmp.height;frameW=bmp.width;frameH=bmp.height}
+    ctx.drawImage(bmp,0,0);bmp.close();hasFrame=true;firstFrameRendered=true;clearTimeout(firstFrameTimer);$('#viewerPlaceholder').classList.add('hidden');
+    frameCounter++;const now=performance.now();if(now-frameWindow>=1000){$('#remoteFps').textContent=`${frameCounter} FPS`;frameCounter=0;frameWindow=now}
+    if(first){fitCanvas();internetTransport?.report?.('first-frame-rendered',{seq,width:frameW,height:frameH,bytes:Number(bytes?.byteLength||0)})}
+  }catch(error){internetTransport?.report?.('frame-decode-error',{message:String(error.message||error).slice(0,180),seq:Number(meta?.seq||0),bytes:Number(bytes?.byteLength||0)});showGesture('A screen frame could not be decoded')}
 }
 async function frameLoop(){
-  if(internetMode){window.DexkInternetOnFrame=drawInternetFrame;window.DexkInternetOnClose=message=>{if(connected)endSession(message||'Internet session closed')};while(connected)await sleep(1000);return}
+  if(internetMode){installInternetFrameHooks();internetTransport.flushQueuedFrame?.();while(connected)await sleep(1000);return}
   const canvas=$('#screen'),ctx=canvas.getContext('2d',{alpha:false,desynchronized:true});
   while(connected){
     try{
       const r=await req(`/api/remote/frame?after=${seq}`);if(r.status===204)continue;
       seq=Number(r.headers.get('X-Frame-Seq')||seq);frameW=Number(r.headers.get('X-Frame-Width')||1);frameH=Number(r.headers.get('X-Frame-Height')||1);
-      const bmp=await createImageBitmap(await r.blob());const first=!hasFrame;
+      const bmp=await createImageBitmap(await r.blob()),first=!hasFrame;
       if(canvas.width!==bmp.width||canvas.height!==bmp.height){canvas.width=bmp.width;canvas.height=bmp.height;frameW=bmp.width;frameH=bmp.height}
       ctx.drawImage(bmp,0,0);bmp.close();hasFrame=true;$('#viewerPlaceholder').classList.add('hidden');
       frameCounter++;const now=performance.now();if(now-frameWindow>=1000){$('#remoteFps').textContent=`${frameCounter} FPS`;frameCounter=0;frameWindow=now}if(first)fitCanvas();
@@ -244,5 +260,5 @@ $('#fullBtn').onclick=toggleFullscreen;$('#sheetFullscreen').onclick=()=>{closeM
 const more=$('#moreSheet');function openMore(){more.classList.remove('hidden')}function closeMore(){more.classList.add('hidden')}
 $('#mobileMore').onclick=openMore;$('#closeMore').onclick=closeMore;more.onclick=e=>{if(e.target===more)closeMore()};$$('[data-sheet-input]').forEach(b=>b.onclick=()=>{setInputMode(b.dataset.sheetInput);closeMore()});
 $('#topDisconnect').onclick=()=>endSession('Disconnected');$('#sheetDisconnect').onclick=()=>{closeMore();endSession('Disconnected')};
-async function endSession(message='Disconnected'){if(!connected)return;connected=false;try{await req('/api/remote/disconnect',{method:'POST'})}catch{}if(internetMode)internetTransport.close();token='';sessionId='';setStatus(message);$('#sessionUI').classList.add('hidden');$('#connectMain').classList.remove('hidden');$('#topDisconnect').classList.add('hidden');$('#viewerPlaceholder').classList.remove('hidden');hasFrame=false;stagePointers.clear();document.body.classList.remove('session-active');nativeCall('sessionState','inactive')}
+async function endSession(message='Disconnected'){if(!connected)return;connected=false;clearTimeout(firstFrameTimer);pendingInternetFrame=null;try{await req('/api/remote/disconnect',{method:'POST'})}catch{}if(internetMode)internetTransport.close();token='';sessionId='';setStatus(message);$('#sessionUI').classList.add('hidden');$('#connectMain').classList.remove('hidden');$('#topDisconnect').classList.add('hidden');$('#viewerPlaceholder').classList.remove('hidden');hasFrame=false;stagePointers.clear();document.body.classList.remove('session-active');nativeCall('sessionState','inactive')}
 window.addEventListener('beforeunload',()=>{if(internetMode){internetTransport.close();return}if(token)navigator.sendBeacon(`/api/remote/disconnect?token=${encodeURIComponent(token)}`)});
