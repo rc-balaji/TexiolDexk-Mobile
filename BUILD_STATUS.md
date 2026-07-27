@@ -1,11 +1,11 @@
-# Build status — TexiolDexk-Mobile v2.1.0
+# Build status — TexiolDexk-Mobile v2.1.1
 
 Preparation checks:
 
 - Java source parser reached Android/dependency resolution without syntax errors.
 - EdDSA 0.3.0 key generator class usage corrected.
 - Android XML resources parsed successfully.
-- JavaScript controller/WebRTC syntax checks passed.
+- JavaScript controller/WebRTC syntax and signalling-wire regression checks passed.
 - GitHub workflow YAML parsed successfully.
 - Package name: `com.texiol.dexk`.
 - Minimum Android version: Android 9 / API 28.

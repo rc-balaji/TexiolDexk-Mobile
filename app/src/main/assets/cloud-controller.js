@@ -42,7 +42,7 @@ function nativeSignalling(){
   endpoint.searchParams.set('access_token',config.accessToken);
   endpoint.searchParams.set('device_name',config.deviceName||'Android controller');
   endpoint.searchParams.set('platform','android');
-  endpoint.searchParams.set('client_version','2.1.0');
+  endpoint.searchParams.set('client_version','2.1.1');
   ws=new WebSocket(endpoint);
   ws.onopen=()=>{connected=true;};ws.onclose=()=>{connected=false;};ws.onerror=()=>{connected=false;};
   ws.onmessage=event=>{try{const message=JSON.parse(event.data);for(const handler of handlers)handler(message);}catch{}};
@@ -55,13 +55,13 @@ function nativeSignalling(){
  return{
   async ready(){if(config&&connected)return config;if(!startPromise)startPromise=start().finally(()=>{startPromise=null;});return startPromise;},
   async send(message){await this.ready();if(!connected||ws?.readyState!==WebSocket.OPEN)throw new Error('Internet signalling is offline');ws.send(JSON.stringify(message));},
-  async status(){await this.ready();return{serverUrl:config.serverUrl,deviceId:config.deviceId,formattedDeviceId:C.formatId(config.deviceId),connected,platform:'android',clientVersion:'2.1.0',stunUrls:config.stunUrls||[],iceServers:config.iceServers||[]};},
+  async status(){await this.ready();return{serverUrl:config.serverUrl,deviceId:config.deviceId,formattedDeviceId:C.formatId(config.deviceId),connected,platform:'android',clientVersion:'2.1.1',stunUrls:config.stunUrls||[],iceServers:config.iceServers||[]};},
   probeLan,onMessage(handler){handlers.add(handler);return()=>handlers.delete(handler);},close(){try{ws?.close();}catch{}}
  };
 }
 function createSignal(){return window.DexkNative?.cloudInitialize?nativeSignalling():C.localSignalling();}
 signal=createSignal();
-function send(type,payload={},rid=requestId){return signal.send({type,targetDeviceId:targetId,sessionId,requestId:rid,payload});}
+function send(type,payload={},rid){const message={type,targetDeviceId:targetId,payload};if(sessionId)message.sessionId=sessionId;if(typeof rid==='string'&&rid)message.requestId=rid;return signal.send(message);}
 function diag(stage,detail={}){try{return send('diag.event',{role:'controller',stage,rtc:C.rtcState(pc),candidateCounts,channels:{control:control?.readyState||'none',frames:frames?.readyState||'none'},...detail});}catch{return Promise.resolve();}}
 
 async function connect(options){
@@ -73,7 +73,7 @@ async function connect(options){
  try{
   const status=await signal.status();
   const iceServers=status.iceServers?.length?status.iceServers:(status.stunUrls||['stun:stun.cloudflare.com:3478']);
-  await signal.send({type:'session.request',targetDeviceId:targetId,sessionId,requestId,payload:{controllerName:pendingConnect.options.name,quality:pendingConnect.options.quality,clientType:pendingConnect.options.clientType,requestedMode:'view-and-control',iceServers,stunUrls:status.stunUrls||[]}});
+  await signal.send({type:'session.request',targetDeviceId:targetId,sessionId,requestId,payload:{controllerName:pendingConnect.options.name,quality:pendingConnect.options.quality,clientType:pendingConnect.options.clientType,requestedMode:'view-and-control',protocolVersion:4,iceServers,stunUrls:status.stunUrls||[]}});
  }catch(error){const pending=pendingConnect;pendingConnect=null;pending.reject(error);}
  const timer=setTimeout(()=>{if(!pendingConnect)return;const pending=pendingConnect;pendingConnect=null;pending.reject(new Error('Host did not respond in time'));close('Host response timeout');},60000);
  promise.finally(()=>clearTimeout(timer));return promise;
@@ -147,7 +147,8 @@ async function request(path,options={}){let action,payload={};if(options.body&&t
 
 async function onMessage(message){
  if(!message)return;
- if(message.type==='server.delivery'&&message.requestId===requestId&&!message.online&&pendingConnect){const pending=pendingConnect;pendingConnect=null;pending.reject(new Error('The Windows host is offline on the signalling server'));close('Target offline',false);return;}
+ if(message.type==='server.error'){const error=new Error(`Signalling rejected a message: ${message.message||message.code||'unknown error'}`);if(pendingConnect){const pending=pendingConnect;pendingConnect=null;pending.reject(error);}close(error.message,false);return;}
+ if(message.type==='server.delivery'&&message.requestId===requestId&&(!message.messageType||message.messageType==='session.request')&&!message.online&&pendingConnect){const pending=pendingConnect;pendingConnect=null;pending.reject(new Error('The Windows host is offline on the signalling server'));close('Target offline',false);return;}
  if(message.sessionId!==sessionId)return;
  try{
   switch(message.type){

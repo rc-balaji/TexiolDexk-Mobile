@@ -1,0 +1,12 @@
+TEXIOLDEXK MOBILE v2.1.1 VALIDATION
+- Complete source repository tree retained.
+- Initial session request keeps a UUID correlation ID.
+- Offer, ICE, diagnostics, close and cancellation messages omit absent optional request IDs.
+- Server validation errors are surfaced immediately instead of waiting for control-channel timeout.
+- Signalling wire regression validation passed.
+- Same-LAN fallback simulation passed.
+- cloud-common.js, cloud-controller.js and remote.js syntax checks passed.
+- All 9 Android XML resources parsed successfully.
+- Android versionCode is 22 and versionName is 2.1.1.
+- APK compilation remains configured in GitHub Actions; Android SDK was not available in the packaging environment.
+- Physical Android/Windows network testing remains required after installing the newly compiled APK and EXE.

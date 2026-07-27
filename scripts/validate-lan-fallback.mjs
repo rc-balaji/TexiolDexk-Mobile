@@ -23,7 +23,7 @@ class FakeWebSocket {
         allowed: true,
         lanCandidates: [{ url: 'http://192.168.1.17:45911/remote' }],
         iceServers: [{ urls: ['stun:stun.cloudflare.com:3478'] }],
-        protocolVersion: 3
+        protocolVersion: 4
       }
     }) }), 3);
   }

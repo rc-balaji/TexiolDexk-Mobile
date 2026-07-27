@@ -6,9 +6,9 @@ on:
   workflow_dispatch:
     inputs:
       tag_name:
-        description: Release tag, for example v2.1.0
+        description: Release tag, for example v2.1.1
         required: true
-        default: v2.1.0
+        default: v2.1.1
 
 permissions:
   contents: write
@@ -27,7 +27,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          name: Texiol-Dexk-Mobile-v2.1.0
+          name: Texiol-Dexk-Mobile-v2.1.1
           path: release
       - name: Publish release assets
         shell: bash

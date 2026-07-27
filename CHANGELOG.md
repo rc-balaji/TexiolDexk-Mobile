@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.1.1
+
+- Fixed WebRTC signalling correlation so optional `requestId` values are omitted instead of serialized as `null`.
+- Added immediate controller handling for signalling validation errors instead of waiting for a control-channel timeout.
+- Added protocol version 4 capability signalling while retaining v2.1.0 wire compatibility.
+- Retained automatic same-LAN probing, direct-LAN fallback and one ICE restart.
+
 ## 2.1.0
 
 - Automatic native same-LAN probe and direct-LAN fallback for Internet Device IDs.
@@ -7,7 +14,6 @@
 - Immediate target-offline, cancellation and cleanup handling.
 - Privacy-safe diagnostics for the protected Server monitor.
 - Android resource and artifact naming fixes retained.
-
 
 ## 2.0.2
 
