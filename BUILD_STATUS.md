@@ -1,5 +1,3 @@
-# Build status — TexiolDexk-Mobile v2.1.2
+# Build status — TexiolDexk-Mobile v2.1.3
 
-Source-level JavaScript, signalling, chunked frame transport, LAN fallback, Android XML and workflow validation passed.
-
-The APK/AAB must be compiled by GitHub Actions and physically tested with Windows v2.1.2.
+Validated: JavaScript syntax, handler-first event delivery, signalling correlation, same-LAN fallback simulation, 620 KB chunked frame transport, and Android XML parsing. GitHub Actions must compile and physically test the APK with Windows v2.1.3.

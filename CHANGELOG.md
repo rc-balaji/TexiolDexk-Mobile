@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.1.3
+
+- Starts signalling event delivery only after the controller handler is installed.
+- Adds explicit response-received, offer-delivery and offer-to-answer diagnostics.
+- Handles duplicate accepted responses safely using a single-flight peer start.
+- Retains v2.1.2 chunked frame transport and automatic ICE restart.
+
 ## 2.1.2
 
 - Added chunked DXF2 JPEG frame reassembly for Android WebView instead of requiring one oversized RTCDataChannel message.

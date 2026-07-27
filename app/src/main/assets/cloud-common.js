@@ -55,11 +55,11 @@ function createFrameAssembler(options={}){
  return{push,close,get pendingCount(){return pending.size},get lastCompleted(){return lastCompleted}};
 }
 function localSignalling(base='http://127.0.0.1:45910'){
- let seq=0,closed=false,handlers=new Set();
+ let seq=0,closed=false,started=false,handlers=new Set();
  const send=async message=>{const r=await fetch(base+'/api/cloud/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(message),cache:'no-store'});if(!r.ok)throw new Error((await r.text()).trim()||r.statusText)};
  const status=async()=>{const r=await fetch(base+'/api/cloud/status',{cache:'no-store'});if(!r.ok)throw new Error((await r.text()).trim()||r.statusText);return r.json()};
- const loop=async()=>{while(!closed){try{const r=await fetch(`${base}/api/cloud/events?after=${seq}`,{cache:'no-store'});if(!r.ok)throw new Error(await r.text());const j=await r.json();for(const e of j.events||[]){seq=Math.max(seq,Number(e.seq)||0);for(const h of handlers)try{h(e.payload)}catch{}}}catch{await sleep(700)}}};
- loop();return{send,status,onMessage(fn){handlers.add(fn);return()=>handlers.delete(fn)},close(){closed=true}};
+ const loop=async()=>{while(!closed){try{const r=await fetch(`${base}/api/cloud/events?after=${seq}`,{cache:'no-store'});if(!r.ok)throw new Error(await r.text());const j=await r.json();for(const e of j.events||[]){seq=Math.max(seq,Number(e.seq)||0);for(const h of [...handlers])try{h(e.payload)}catch{}}}catch{await sleep(700)}}};
+ return{send,status,onMessage(fn){handlers.add(fn);if(!started){started=true;queueMicrotask(loop);}return()=>handlers.delete(fn)},close(){closed=true}};
 }
 function normalizeIceServers(value){
  const fallback=[{urls:['stun:stun.cloudflare.com:3478']}];if(!Array.isArray(value)||!value.length)return fallback;if(value.every(v=>typeof v==='string'))return [{urls:value.filter(Boolean)}];const out=[];

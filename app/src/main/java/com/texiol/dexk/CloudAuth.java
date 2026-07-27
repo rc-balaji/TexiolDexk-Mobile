@@ -77,7 +77,7 @@ final class CloudAuth {
             out.put("stunUrls", new JSONArray(stunUrls));
             out.put("iceServers", iceServers);
             out.put("platform", "android");
-            out.put("clientVersion", "2.1.2");
+            out.put("clientVersion", "2.1.3");
             return out;
         }
     }
@@ -164,7 +164,7 @@ final class CloudAuth {
             connection.setConnectTimeout(10_000);
             connection.setReadTimeout(10_000);
             connection.setRequestMethod("GET");
-            connection.setRequestProperty("User-Agent", "TexiolDexk-Mobile/2.1.2");
+            connection.setRequestProperty("User-Agent", "TexiolDexk-Mobile/2.1.3");
             if (accessToken != null && !accessToken.isEmpty()) connection.setRequestProperty("Authorization", "Bearer " + accessToken);
             String body = readResponse(connection);
             if (connection.getResponseCode() >= 200 && connection.getResponseCode() < 300) {
@@ -197,7 +197,7 @@ final class CloudAuth {
         connection.setDoOutput(true);
         connection.setRequestProperty("Content-Type", "application/json; charset=utf-8");
         connection.setRequestProperty("Accept", "application/json");
-        connection.setRequestProperty("User-Agent", "TexiolDexk-Mobile/2.1.2");
+        connection.setRequestProperty("User-Agent", "TexiolDexk-Mobile/2.1.3");
         if (authorization != null) connection.setRequestProperty("Authorization", authorization);
         byte[] encoded = body.toString().getBytes(StandardCharsets.UTF_8);
         connection.setFixedLengthStreamingMode(encoded.length);

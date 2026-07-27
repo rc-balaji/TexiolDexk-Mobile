@@ -1,4 +1,4 @@
-# TexiolDexk-Mobile v2.1.2
+# TexiolDexk-Mobile v2.1.3
 
 Android controller-only application for Texiol's Dexk Windows.
 
@@ -40,3 +40,7 @@ Required release secrets:
 - `ANDROID_KEY_PASSWORD`
 
 On restrictive external networks, a TURN service must be configured in the Server. Mobile contains no embedded TURN or admin credentials.
+
+## v2.1.3 accepted-session reliability
+
+The controller attaches its signalling handler before event polling begins, safely ignores duplicate accepted responses, and reports the response-to-offer path to `/monitor`.

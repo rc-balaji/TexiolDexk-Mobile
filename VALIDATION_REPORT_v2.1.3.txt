@@ -1,0 +1,10 @@
+TEXIOLDEXK MOBILE v2.1.3 VALIDATION
+
+PASS - controller JavaScript syntax
+PASS - handler-first event delivery test
+PASS - signalling response/offer regression checks
+PASS - same-LAN fallback simulation
+PASS - 620123-byte frame transport across 51 chunks
+PASS - Android XML parsing
+
+APK compilation and physical-device testing are performed through GitHub Actions.
