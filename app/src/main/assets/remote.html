@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="theme-color" content="#07101f">
+  <title>Dexk by Texiol</title>
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/dexk-icon-192.png">
+  <link rel="apple-touch-icon" href="assets/dexk-icon-192.png">
+  <link rel="manifest" href="data:application/manifest+json,%7B%7D">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="remote-body">
+<div class="remote-shell">
+  <header class="remote-appbar">
+    <div class="remote-brand">
+      <img class="remote-logo" src="assets/dexk-logo.svg" alt="Dexk">
+      <div><strong>Dexk</strong><small>by Texiol</small></div>
+    </div>
+    <div id="sessionTitle" class="session-title"><span class="device-dot"></span><span id="remoteStatus">Not connected</span></div>
+    <div class="remote-spacer"></div>
+    <div class="remote-metrics">
+      <span class="remote-metric"><span>Latency</span><strong id="latency">—</strong></span>
+      <span class="remote-metric"><span>Frames</span><strong id="remoteFps">0 FPS</strong></span>
+    </div>
+    <button id="topDisconnect" class="remote-disconnect hidden">Disconnect</button>
+  </header>
+
+  <main id="connectMain" class="dexk-connect-page">
+    <section class="dexk-connect-card">
+      <div class="dexk-connect-hero">
+        <div class="hero-brand-orbit"><img src="assets/dexk-logo.svg" alt=""><span></span></div>
+        <div class="hero-copy">
+          <span class="remote-kicker">TEXIOL’S DEXK</span>
+          <h1>Control your <em>Windows PC</em>.</h1>
+          <p>Secure, low-latency remote control with a separate guide pointer before control is granted.</p>
+          <div class="hero-proof"><span>✓ Visible approval</span><span>✓ Expiring PIN</span><span>✓ Multi-cursor guidance</span></div>
+        </div>
+      </div>
+      <div class="dexk-connect-form">
+        <div>
+          <span class="remote-kicker">JOIN THIS SESSION</span>
+          <h2>Request access</h2>
+          <p>The Windows host displays the one-time PIN and receives a final Allow/Decline prompt.</p>
+        </div>
+        <div class="remote-form-grid">
+          <label class="remote-field"><span>Your device name</span><input id="name" class="remote-input" value="My device" maxlength="60"></label>
+          <label class="remote-field"><span>Quality</span><select id="quality" class="remote-input"><option value="balanced">Balanced</option><option value="high">High detail</option><option value="data">Data saver</option></select></label>
+        </div>
+        <label class="remote-field"><span>One-time PIN</span><input id="remotePin" class="remote-input pin" inputmode="numeric" maxlength="8" placeholder="00000000" autocomplete="one-time-code"></label>
+        <button id="connectBtn" class="remote-primary">Connect securely <span>→</span></button>
+        <div id="connectError" class="remote-error"></div>
+      </div>
+    </section>
+  </main>
+
+  <section id="sessionUI" class="session-shell hidden input-touchpad">
+    <div id="viewerStage" class="viewer-stage">
+      <div class="session-overlay-top">
+        <div id="participantBar" class="participant-bar"></div>
+        <div class="viewport-tools"><button id="zoomOut" class="viewport-button" title="Zoom out">−</button><button id="fitScreen" class="viewport-button" title="Fit screen">□</button><button id="zoomIn" class="viewport-button" title="Zoom in">+</button></div>
+      </div>
+      <div id="screenWrap" class="screen-wrap"><canvas id="screen" class="screen-canvas"></canvas></div>
+      <div id="viewerPlaceholder" class="viewer-placeholder"><div class="loader"></div><span>Waiting for the first frame…</span></div>
+      <div id="modeNotice" class="mode-notice"><strong>Guide Pointer</strong> · independent from the Windows system cursor</div>
+      <div id="gestureToast" class="gesture-toast"></div>
+
+      <div id="floatingPad" class="floating-touchpad hidden-pad" aria-label="Floating touchpad">
+        <div class="floating-pad-head"><span>Precision pad</span><button id="pinFloatingPad" title="Pin or move">⌖</button><button id="hideFloatingPad" title="Hide">×</button></div>
+        <div id="floatingPadSurface" class="floating-pad-surface"><span class="pad-glow"></span></div>
+        <div class="floating-pad-buttons"><button id="floatingLeft">Left</button><button id="floatingRight">Right</button></div>
+      </div>
+    </div>
+
+    <section id="touchpadWorkspace" class="touchpad-workspace">
+      <div class="touchpad-heading">
+        <div><span class="touchpad-status-dot"></span><strong>TOUCHPAD MODE</strong><small>Precise cursor control · one finger moves · two fingers scroll</small></div>
+        <button id="switchToTouchscreen" class="mode-switch">Switch to touchscreen</button>
+      </div>
+      <div class="touchpad-card">
+        <div id="verticalScroll" class="scroll-rail vertical"><span>⌃</span><i></i><b>SCROLL</b><span>⌄</span></div>
+        <div id="virtualTrackpad" class="virtual-trackpad">
+          <div class="pad-center-cue"><span>↖ ↑ ↗<br>← ● →<br>↙ ↓ ↘</span><strong>Drag to move cursor</strong><small>Tap to click · long press for right click</small></div>
+          <div class="gesture-hints"><span><b>2</b>Two-finger scroll</span><span><b>3</b>Three-finger shortcuts</span><span><b>↔</b>Horizontal scroll</span></div>
+        </div>
+        <div id="horizontalScroll" class="scroll-rail horizontal"><span>‹</span><i></i><b>SCROLL</b><span>›</span></div>
+        <div class="touchpad-clicks"><button id="leftClick"><span>◉</span>LEFT CLICK</button><button id="rightClick"><span>◌</span>RIGHT CLICK</button></div>
+      </div>
+    </section>
+
+    <div class="desktop-toolbar">
+      <span class="toolbar-caption">Cursor</span>
+      <div class="tool-group"><button class="remote-tool active" data-session-mode="pointer">Guide Pointer</button><button class="remote-tool" data-session-mode="control">Control</button></div>
+      <span class="toolbar-caption">Input</span>
+      <div class="tool-group"><button class="remote-tool" data-input-mode="touchscreen">Touchscreen</button><button class="remote-tool active" data-input-mode="touchpad">Touchpad</button></div>
+      <div class="toolbar-separator"></div>
+      <button id="keyboardBtn" class="remote-tool">Keyboard</button>
+      <button class="remote-tool icon" data-key="32" title="Space">␠</button><button class="remote-tool icon" data-key="13" title="Enter">↵</button><button class="remote-tool icon" data-key="8" title="Backspace">⌫</button><button class="remote-tool icon" data-key="27" title="Escape">Esc</button>
+      <div class="toolbar-spacer"></div>
+      <button id="inputPreferencesBtn" class="remote-tool">Preferences</button><button id="clipBtn" class="remote-tool">Clipboard</button><label class="remote-tool">Send file<input id="fileInput" type="file" hidden></label><button id="fullBtn" class="remote-tool">Fullscreen</button>
+    </div>
+
+    <div class="mobile-dock">
+      <button class="dock-action active" data-mobile-session-mode="pointer"><span>✦</span>Guide</button>
+      <button class="dock-action" data-mobile-session-mode="control"><span>⌁</span>Control</button>
+      <button class="dock-action active" data-mobile-input-mode="touchpad"><span>▦</span>Touchpad</button>
+      <button class="dock-action" data-mobile-input-mode="touchscreen"><span>☝</span>Touch</button>
+      <button id="mobileKeyboard" class="dock-action"><span>⌨</span>Keyboard</button>
+      <button id="mobileMore" class="dock-action"><span>•••</span>More</button>
+    </div>
+  </section>
+
+  <textarea id="hiddenInput" class="hidden-input" autocomplete="off" autocapitalize="off" spellcheck="false"></textarea>
+</div>
+
+<div id="moreSheet" class="mobile-more-sheet hidden"><div class="sheet-card"><div class="sheet-handle"></div><div class="sheet-head"><h3>Session controls</h3><button id="closeMore" class="remote-tool">Close</button></div><div class="sheet-grid">
+  <button class="sheet-action" data-sheet-input="touchpad"><span>▦</span>Touchpad</button><button class="sheet-action" data-sheet-input="touchscreen"><span>☝</span>Touchscreen</button><button id="sheetFloatingPad" class="sheet-action"><span>⌖</span>Floating pad</button>
+  <button id="sheetLeft" class="sheet-action"><span>◉</span>Left click</button><button id="sheetRight" class="sheet-action"><span>◌</span>Right click</button><button id="sheetKeyboard" class="sheet-action"><span>⌨</span>Keyboard</button>
+  <button class="sheet-action" data-key="32"><span>␠</span>Space</button><button class="sheet-action" data-key="13"><span>↵</span>Enter</button><button class="sheet-action" data-key="8"><span>⌫</span>Backspace</button>
+  <button class="sheet-action" data-key="27"><span>Esc</span>Escape</button><button id="sheetClip" class="sheet-action"><span>▤</span>Clipboard</button><label class="sheet-action"><span>▱</span>Send file<input id="sheetFileInput" type="file" hidden></label>
+  <button id="sheetPreferences" class="sheet-action"><span>⚙</span>Preferences</button><button id="sheetFullscreen" class="sheet-action"><span>□</span>Fullscreen</button><button id="sheetFit" class="sheet-action"><span>↔</span>Fit screen</button><button id="sheetDisconnect" class="sheet-action danger"><span>×</span>Disconnect</button>
+</div></div></div>
+
+<div id="inputPreferencesModal" class="remote-modal preference-modal hidden"><div class="remote-modal-card preference-modal-card">
+  <div class="remote-modal-title"><div><span class="remote-kicker">CONTROLLER PREFERENCES</span><h3>Pointer, scroll and appearance</h3><p>These settings are stored on this controller device.</p></div><button id="closeInputPreferences" class="remote-tool">Close</button></div>
+  <div class="remote-preference-grid">
+    <section class="remote-preference-section"><h4>Pointer movement</h4>
+      <label><span>Pointer speed <b id="pointerSpeedValue">1.8×</b></span><input id="pointerSpeed" type="range" min="0.5" max="4" step="0.1"></label>
+      <label><span>Acceleration</span><select id="pointerAcceleration"><option value="off">Off</option><option value="adaptive">Adaptive</option><option value="fast">Fast</option></select></label>
+      <label class="remote-check"><input id="tapToClick" type="checkbox"><span>Tap to click</span></label><label class="remote-check"><input id="longPressRightClick" type="checkbox"><span>Long-press for right click</span></label><label class="remote-check"><input id="touchDrag" type="checkbox"><span>Touchscreen drag</span></label>
+    </section>
+    <section class="remote-preference-section"><h4>Vertical scrolling</h4>
+      <label><span>Speed <b id="verticalScrollValue">16×</b></span><input id="verticalScrollSpeed" type="range" min="2" max="40" step="1"></label>
+      <label><span>Direction</span><select id="verticalScrollDirection"><option value="natural">Natural</option><option value="standard">Standard</option></select></label>
+    </section>
+    <section class="remote-preference-section"><h4>Horizontal scrolling</h4>
+      <label><span>Speed <b id="horizontalScrollValue">16×</b></span><input id="horizontalScrollSpeed" type="range" min="2" max="40" step="1"></label>
+      <label><span>Direction</span><select id="horizontalScrollDirection"><option value="natural">Natural</option><option value="standard">Standard</option></select></label>
+    </section>
+    <section class="remote-preference-section"><h4>Floating touchpad</h4>
+      <label><span>Size <b id="floatingPadSizeValue">100%</b></span><input id="floatingPadSize" type="range" min="75" max="150" step="5"></label>
+      <label><span>Opacity <b id="floatingPadOpacityValue">92%</b></span><input id="floatingPadOpacity" type="range" min="45" max="100" step="5"></label>
+    </section>
+    <section class="remote-preference-section"><h4>Appearance</h4>
+      <label><span>Accent</span><select id="controllerAccent"><option value="violet">Violet</option><option value="blue">Electric blue</option><option value="teal">Teal</option><option value="rose">Rose</option><option value="amber">Amber</option></select></label>
+      <label><span>Density</span><select id="controllerDensity"><option value="comfortable">Comfortable</option><option value="compact">Compact</option></select></label>
+    </section>
+  </div>
+  <div class="remote-modal-actions"><button id="resetInputPreferences" class="remote-tool">Reset defaults</button><button id="saveInputPreferences" class="remote-tool active">Save preferences</button></div>
+</div></div>
+
+<div id="clipModal" class="remote-modal hidden"><div class="remote-modal-card"><h3>Clipboard text</h3><textarea id="clipText" placeholder="Paste text to send to the computer, or request the computer clipboard."></textarea><div class="remote-modal-actions"><button id="clipClose" class="remote-tool">Close</button><button id="clipGet" class="remote-tool">Get from PC</button><button id="clipSend" class="remote-tool active">Send to PC</button></div></div></div>
+<script src="cloud-common.js"></script>
+<script src="cloud-controller.js"></script>
+<script src="remote.js"></script>
+</body>
+</html>

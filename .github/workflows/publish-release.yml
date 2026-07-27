@@ -1,0 +1,45 @@
+name: Publish TexiolDexk Mobile Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: Release tag, for example v2.0.0
+        required: true
+        default: v2.0.0
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    uses: ./.github/workflows/build-mobile.yml
+    secrets: inherit
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: Texiol-Dexk-Mobile-v2.0.0
+          path: release
+      - name: Publish release assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME}"
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then TAG="${{ inputs.tag_name }}"; fi
+          cp CHANGELOG.md release-notes.md
+          mapfile -t assets < <(find release -type f)
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "${assets[@]}" --clobber
+            gh release edit "$TAG" --notes-file release-notes.md
+          else
+            gh release create "$TAG" "${assets[@]}" --target "$GITHUB_SHA" --title "Texiol's Dexk Mobile $TAG" --notes-file release-notes.md
+          fi

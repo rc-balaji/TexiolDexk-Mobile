@@ -1,0 +1,74 @@
+name: Build TexiolDexk Mobile
+
+on:
+  workflow_call:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    env:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD_SECRET: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS_SECRET: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD_SECRET: ${{ secrets.ANDROID_KEY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Install Android SDK packages
+        shell: bash
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+          cache-read-only: false
+      - name: Build debug APK
+        shell: bash
+        run: gradle --no-daemon clean assembleDebug --stacktrace
+      - name: Prepare optional release key
+        if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          KEYSTORE="$RUNNER_TEMP/dexk-release.jks"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE"
+          {
+            echo "ANDROID_KEYSTORE_PATH=$KEYSTORE"
+            echo "ANDROID_KEYSTORE_PASSWORD=$ANDROID_KEYSTORE_PASSWORD_SECRET"
+            echo "ANDROID_KEY_ALIAS=$ANDROID_KEY_ALIAS_SECRET"
+            echo "ANDROID_KEY_PASSWORD=$ANDROID_KEY_PASSWORD_SECRET"
+          } >> "$GITHUB_ENV"
+      - name: Build signed release APK and AAB
+        if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' }}
+        shell: bash
+        run: gradle --no-daemon assembleRelease bundleRelease --stacktrace
+      - name: Collect artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          cp app/build/outputs/apk/debug/app-debug.apk dist/Texiol-Dexk-Mobile-v2.0.0-debug.apk
+          sha256sum dist/Texiol-Dexk-Mobile-v2.0.0-debug.apk > dist/Texiol-Dexk-Mobile-v2.0.0-debug.apk.sha256
+          if [[ -f app/build/outputs/apk/release/app-release.apk ]]; then
+            cp app/build/outputs/apk/release/app-release.apk dist/Texiol-Dexk-Mobile-v2.0.0.apk
+            cp app/build/outputs/bundle/release/app-release.aab dist/Texiol-Dexk-Mobile-v2.0.0.aab
+            sha256sum dist/Texiol-Dexk-Mobile-v2.0.0.apk > dist/Texiol-Dexk-Mobile-v2.0.0.apk.sha256
+            sha256sum dist/Texiol-Dexk-Mobile-v2.0.0.aab > dist/Texiol-Dexk-Mobile-v2.0.0.aab.sha256
+            "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs dist/Texiol-Dexk-Mobile-v2.0.0.apk
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Texiol-Dexk-Mobile-v2.0.0
+          path: dist/*
+          if-no-files-found: error
