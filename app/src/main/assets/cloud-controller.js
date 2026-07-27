@@ -52,8 +52,8 @@ function nativeSignalling(){
     endpoint.searchParams.set('platform','android');
     ws=new WebSocket(endpoint);
     ws.onopen=()=>{connected=true;};
-    ws.onclose=()=>{connected=false;};
-    ws.onerror=()=>{connected=false;};
+    ws.onclose=event=>{connected=false;window.DexkLastSignalError=`Signalling closed (${event.code||'unknown'})`;};
+    ws.onerror=()=>{connected=false;window.DexkLastSignalError='Unable to open secure signalling socket';};
     ws.onmessage=event=>{
       try{
         const message=JSON.parse(event.data);
@@ -61,10 +61,10 @@ function nativeSignalling(){
       }catch{}
     };
     await new Promise((resolve,reject)=>{
-      const timeout=setTimeout(()=>reject(new Error('Signalling connection timed out')),12000);
+      const timeout=setTimeout(()=>reject(new Error(window.DexkLastSignalError||'Signalling connection timed out')),12000);
       const poll=()=>{
         if(connected){clearTimeout(timeout);resolve();return;}
-        if(ws?.readyState===WebSocket.CLOSED){clearTimeout(timeout);reject(new Error('Signalling connection failed'));return;}
+        if(ws?.readyState===WebSocket.CLOSED){clearTimeout(timeout);reject(new Error(window.DexkLastSignalError||'Signalling connection failed'));return;}
         setTimeout(poll,80);
       };
       poll();

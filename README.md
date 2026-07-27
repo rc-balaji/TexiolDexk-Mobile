@@ -1,4 +1,4 @@
-# TexiolDexk-Mobile v2.0.0
+# TexiolDexk-Mobile v2.0.2
 
 Android controller-only application for Texiol's Dexk Windows.
 
@@ -35,4 +35,4 @@ Required release secrets:
 - `ANDROID_KEY_ALIAS`
 - `ANDROID_KEY_PASSWORD`
 
-Internet mode is P2P-only in v2.0.0. Networks that block direct ICE connectivity require a future TURN fallback.
+Internet mode is P2P-only in v2.0.2. Networks that block direct ICE connectivity require a future TURN fallback.

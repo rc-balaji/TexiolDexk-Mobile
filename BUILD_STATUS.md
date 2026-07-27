@@ -1,4 +1,4 @@
-# Build status — TexiolDexk-Mobile v2.0.0
+# Build status — TexiolDexk-Mobile v2.0.2
 
 Preparation checks:
 

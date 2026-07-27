@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.0.0
+## 2.0.2
 
 - Split into an independent controller-only mobile repository.
 - Added permanent Internet Device IDs and Ed25519 device enrollment.
