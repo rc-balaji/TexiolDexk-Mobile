@@ -1,0 +1,23 @@
+TexiolDexk-Mobile v2.1.4 validation report
+==============================================
+PASS  cloud-common.js, cloud-controller.js and remote.js syntax
+PASS  signalling correlation and offer-delivery diagnostics regression
+PASS  message handler installed before event polling
+PASS  native same-LAN fallback simulation
+PASS  620,123-byte RTC frame split/reassembled across 51 chunks
+PASS  920,123-byte Showcase Relay frame base64 encoded and reassembled across 29 reversed chunks
+PASS  all Android XML resources parsed
+PASS  GitHub workflow YAML parsed successfully
+PASS  versionCode 25 / versionName 2.1.4
+PASS  no embedded long runtime credentials found
+
+Implemented connection order:
+  native same-LAN probe -> direct WebRTC -> Showcase Relay
+
+Not run in this packaging environment:
+- Android Gradle APK compilation (Android SDK unavailable here).
+- Physical touch, keyboard, clipboard and frame-render testing.
+GitHub Actions installs Android SDK 36 and builds the debug APK; install that v2.1.4 APK for testing.
+
+Scope limitation:
+Showcase Relay is reduced-quality private-demo infrastructure. It is not an application-layer end-to-end encrypted public production relay.

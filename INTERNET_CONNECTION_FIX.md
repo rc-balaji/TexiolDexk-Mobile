@@ -1,7 +1,5 @@
-# Internet connection fix — v2.1.3
+# Internet connection fix — v2.1.4
 
-- Keeps the complete Android controller source and assets.
-- Fixes the Android `app_name` resource compilation failure.
-- Improves secure signalling WebSocket error reporting.
-- Remains compatible with the Windows v2.1.3 host auto-receive-on-request behavior.
-- Host approval is still mandatory for every internet session.
+The Android controller now follows LAN → direct WebRTC → Showcase Relay. A direct P2P timeout no longer ends the approved request immediately. The fallback reuses authenticated signalling, sends control RPC as JSON and reassembles capped DXF2 frame chunks. The session bar clearly identifies Showcase Relay.
+
+The original Android resource fix, native LAN probe, visible host approval and one-time PIN requirements remain included.

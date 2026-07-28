@@ -1,11 +1,19 @@
 # Changelog
 
+## 2.1.4
+
+- Added automatic free Showcase Relay fallback after same-LAN and direct WebRTC failure.
+- Added relay authentication/control RPC and chunked base64 DXF2 frame reassembly.
+- Added transport-aware connection status and errors.
+- Retained native same-LAN probing and direct WebRTC as the preferred paths.
+- Added relay regression validation using a 920,123-byte out-of-order frame.
+
 ## 2.1.3
 
-- Starts signalling event delivery only after the controller handler is installed.
-- Adds explicit response-received, offer-delivery and offer-to-answer diagnostics.
-- Handles duplicate accepted responses safely using a single-flight peer start.
-- Retains v2.1.2 chunked frame transport and automatic ICE restart.
+- Started signalling event delivery only after the controller handler was installed.
+- Added explicit response-received, offer-delivery and offer-to-answer diagnostics.
+- Handled duplicate accepted responses safely using a single-flight peer start.
+- Retained v2.1.2 chunked frame transport and automatic ICE restart.
 
 ## 2.1.2
 

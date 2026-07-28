@@ -51,9 +51,9 @@ async function connectSession(){
   try{
     let j;if(internetMode){j=await internetTransport.connect({pin:$('#remotePin').value.trim(),name:$('#name').value.trim(),quality:$('#quality').value,clientType});token='internet';sessionId=j.sessionId||'internet'}else{const r=await req('/api/remote/connect',{method:'POST',body:JSON.stringify({pin:$('#remotePin').value.trim(),name:$('#name').value.trim(),quality:$('#quality').value,clientType})});j=await r.json();token=j.token;sessionId=j.sessionId}permissions=j.permissions;sessionMode=j.mode||'pointer';connected=true;
     $('#connectMain').classList.add('hidden');$('#sessionUI').classList.remove('hidden');$('#topDisconnect').classList.remove('hidden');
-    setStatus(internetMode?'Connected · Internet P2P':'Connected',true);document.body.classList.add('session-active');nativeCall('sessionState','active');
+    setStatus(internetMode?(j.transport==='relay'?'Connected · Showcase Relay':'Connected · Internet P2P'):'Connected',true);document.body.classList.add('session-active');nativeCall('sessionState','active');
     setInputMode(inputMode,false);setSessionModeUI(sessionMode);updateTools();fitCanvas();installInternetFrameHooks();frameLoop();statusLoop();
-    if(internetMode){internetTransport.flushQueuedFrame?.();clearTimeout(firstFrameTimer);firstFrameTimer=setTimeout(()=>{if(connected&&!hasFrame){const message='Connected, but the first screen frame has not arrived. Check the host Frame diagnostics in /monitor.';$('#viewerPlaceholder').querySelector('p')?.replaceChildren(document.createTextNode(message));internetTransport.report?.('first-frame-timeout',{message});}},9000);}
+    if(internetMode){internetTransport.flushQueuedFrame?.();clearTimeout(firstFrameTimer);firstFrameTimer=setTimeout(()=>{if(connected&&!hasFrame){const message=(j.transport==='relay'?'Relay connected, but the first screen frame has not arrived.':'Connected, but the first screen frame has not arrived.')+' Check the host Frame diagnostics in /monitor.';$('#viewerPlaceholder').querySelector('p')?.replaceChildren(document.createTextNode(message));internetTransport.report?.('first-frame-timeout',{message});}},9000);}
   }catch(e){setStatus('Not connected');$('#connectError').textContent=e.message}
   finally{btn.disabled=false}
 }

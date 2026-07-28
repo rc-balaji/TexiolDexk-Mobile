@@ -13,6 +13,9 @@ function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
 function packet(meta,bytes){const m=te.encode(JSON.stringify(meta));const source=asUint8Array(bytes);const out=new Uint8Array(4+m.length+source.byteLength);new DataView(out.buffer).setUint32(0,m.length);out.set(m,4);out.set(source,4+m.length);return out.buffer}
 function unpack(buffer){const view=new DataView(buffer);const n=view.getUint32(0);if(n<2||n>65536||4+n>buffer.byteLength)throw new Error('Invalid Dexk frame packet');const meta=JSON.parse(td.decode(new Uint8Array(buffer,4,n)));return{meta,bytes:buffer.slice(4+n)}}
 function asUint8Array(value){if(value instanceof Uint8Array)return value;if(value instanceof ArrayBuffer)return new Uint8Array(value);if(ArrayBuffer.isView(value))return new Uint8Array(value.buffer,value.byteOffset,value.byteLength);throw new Error('Expected binary frame data')}
+
+function arrayBufferToBase64(value){const bytes=asUint8Array(value);let binary='';const step=0x8000;for(let i=0;i<bytes.length;i+=step){binary+=String.fromCharCode(...bytes.subarray(i,Math.min(bytes.length,i+step)));}return btoa(binary)}
+function base64ToArrayBuffer(value){const binary=atob(String(value||''));const bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);return bytes.buffer}
 async function toArrayBuffer(value){if(value instanceof ArrayBuffer)return value;if(ArrayBuffer.isView(value))return value.buffer.slice(value.byteOffset,value.byteOffset+value.byteLength);if(typeof Blob!=='undefined'&&value instanceof Blob)return value.arrayBuffer();throw new Error('Unsupported RTC frame message type')}
 function frameChunks(meta,bytes,chunkBytes=FRAME_CHUNK_BYTES){
  const source=asUint8Array(bytes);if(source.byteLength<1||source.byteLength>FRAME_MAX_BYTES)throw new Error(`Frame size ${source.byteLength} is outside the supported range`);
@@ -58,8 +61,9 @@ function localSignalling(base='http://127.0.0.1:45910'){
  let seq=0,closed=false,started=false,handlers=new Set();
  const send=async message=>{const r=await fetch(base+'/api/cloud/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(message),cache:'no-store'});if(!r.ok)throw new Error((await r.text()).trim()||r.statusText)};
  const status=async()=>{const r=await fetch(base+'/api/cloud/status',{cache:'no-store'});if(!r.ok)throw new Error((await r.text()).trim()||r.statusText);return r.json()};
+ const probeLan=async candidates=>{const r=await fetch(base+'/api/cloud/probe-lan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({candidates:Array.isArray(candidates)?candidates:[]}),cache:'no-store'});if(!r.ok)throw new Error((await r.text()).trim()||r.statusText);return r.json()};
  const loop=async()=>{while(!closed){try{const r=await fetch(`${base}/api/cloud/events?after=${seq}`,{cache:'no-store'});if(!r.ok)throw new Error(await r.text());const j=await r.json();for(const e of j.events||[]){seq=Math.max(seq,Number(e.seq)||0);for(const h of [...handlers])try{h(e.payload)}catch{}}}catch{await sleep(700)}}};
- return{send,status,onMessage(fn){handlers.add(fn);if(!started){started=true;queueMicrotask(loop);}return()=>handlers.delete(fn)},close(){closed=true}};
+ return{send,status,probeLan,onMessage(fn){handlers.add(fn);if(!started){started=true;queueMicrotask(loop);}return()=>handlers.delete(fn)},close(){closed=true}};
 }
 function normalizeIceServers(value){
  const fallback=[{urls:['stun:stun.cloudflare.com:3478']}];if(!Array.isArray(value)||!value.length)return fallback;if(value.every(v=>typeof v==='string'))return [{urls:value.filter(Boolean)}];const out=[];
@@ -68,5 +72,5 @@ function normalizeIceServers(value){
 function peer(iceServers=[]){return new RTCPeerConnection({iceServers:normalizeIceServers(iceServers),iceCandidatePoolSize:4,bundlePolicy:'max-bundle'})}
 function candidateKind(candidate){const text=String(candidate?.candidate||candidate||'');const match=text.match(/\btyp\s+(host|srflx|prflx|relay)\b/i);return match?match[1].toLowerCase():'unknown'}
 function rtcState(pc){return{connectionState:pc?.connectionState||'none',iceConnectionState:pc?.iceConnectionState||'none',iceGatheringState:pc?.iceGatheringState||'none',signalingState:pc?.signalingState||'none'}}
-window.DexkCloud={normalizeId,formatId,uuid,sleep,packet,unpack,toArrayBuffer,frameChunks,createFrameAssembler,localSignalling,normalizeIceServers,peer,candidateKind,rtcState,FRAME_CHUNK_BYTES};
+window.DexkCloud={normalizeId,formatId,uuid,sleep,packet,unpack,toArrayBuffer,arrayBufferToBase64,base64ToArrayBuffer,frameChunks,createFrameAssembler,localSignalling,normalizeIceServers,peer,candidateKind,rtcState,FRAME_CHUNK_BYTES};
 })();

@@ -502,7 +502,7 @@ public final class MainActivity extends Activity {
         settings.setMediaPlaybackRequiresUserGesture(true);
         settings.setCacheMode(WebSettings.LOAD_NO_CACHE);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
-        settings.setUserAgentString(settings.getUserAgentString() + " TexiolDexkMobile/2.1.3");
+        settings.setUserAgentString(settings.getUserAgentString() + " TexiolDexkMobile/2.1.4");
         if (BuildConfig.DEBUG) WebView.setWebContentsDebuggingEnabled(true);
         webView.addJavascriptInterface(new NativeBridge(), "DexkNative");
 
@@ -590,7 +590,7 @@ public final class MainActivity extends Activity {
                         connection.setReadTimeout(1600);
                         connection.setRequestMethod("GET");
                         connection.setRequestProperty("Accept", "application/json");
-                        connection.setRequestProperty("User-Agent", "TexiolDexk-Mobile/2.1.3 LAN-Probe");
+                        connection.setRequestProperty("User-Agent", "TexiolDexk-Mobile/2.1.4 LAN-Probe");
                         int code = connection.getResponseCode();
                         String body = code >= 200 && code < 300 ? readSmallResponse(connection) : "";
                         connection.disconnect();
